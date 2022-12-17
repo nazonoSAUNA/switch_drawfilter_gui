@@ -18,7 +18,7 @@ EXTERN_C FILTER_DLL __declspec(dllexport)* __stdcall GetFilterTable() {
     return &filter_dll;
 }
 
-int exedit_dll_hinst;
+int exedit_dll_hinst = 0;
 
 BOOL exedit_Replace16(int exedit_offset, short new_value) {
     DWORD oldProtect;
@@ -56,13 +56,15 @@ BOOL func_init(FILTER* fp) {
 BOOL func_WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, void* editp, FILTER* fp) {
     switch (message) {
     case WM_FILTER_CHANGE_WINDOW:
-        if (fp->exfunc->is_filter_window_disp(fp)) {
-            SetWindowPos(fp->hwnd, 0, 0, 0, 0, 0, (SWP_NOSIZE | SWP_HIDEWINDOW));
-            exedit_Replace16(0x19c65, 0xe990); // JMP
-        } else {
-            exedit_Replace16(0x19c65, 0x840f); // JZ
+        if (exedit_dll_hinst) {
+            if (fp->exfunc->is_filter_window_disp(fp)) {
+                SetWindowPos(fp->hwnd, 0, 0, 0, 0, 0, (SWP_NOSIZE | SWP_HIDEWINDOW));
+                exedit_Replace16(0x19c65, 0xe990); // JMP
+            } else {
+                exedit_Replace16(0x19c65, 0x840f); // JZ
+            }
+            return TRUE;
         }
-        return TRUE;
     }
     return FALSE;
 }
